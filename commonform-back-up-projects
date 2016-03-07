@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+
+var async = require('async')
+var fs = require('fs')
+var https = require('https')
+var mkdirp = require('mkdirp')
+var parse = require('json-parse-errback')
+var path = require('path')
+
+var BASE = (
+  process.argv[2] ||
+  path.join(process.cwd(), 'commonform-projects') )
+
+var API = 'https://projects.commonform.org'
+
+get(( API + '/publishers' ), function(error, publishers) {
+  if (error) { fail(error) }
+  else {
+    async.eachSeries(
+      publishers,
+      function(publisher, next) {
+        var url = (
+          API +
+          '/publishers/' + publisher +
+          '/projects' )
+        get(url, function(error, projects) {
+          if (error) {
+            next(error) }
+          else {
+            async.eachSeries(
+              projects,
+              function(project, next) {
+                var url = (
+                  API +
+                  '/publishers/' + publisher +
+                  '/projects/' + project +
+                  '/editions' )
+                get(url, function(error, editions) {
+                  if (error) { next(error) }
+                  else {
+                    async.eachSeries(
+                      editions,
+                      function(edition, next) {
+                        var url = (
+                          API +
+                          '/publishers/' + publisher +
+                          '/projects/' + project +
+                          '/editions/' + edition )
+                        get(url, function(error, object) {
+                          var directory = path.join(
+                            BASE, publisher, project)
+                          mkdirp(
+                            directory,
+                            function(error) {
+                              if (error) { next(error) }
+                              else {
+                                fs.writeFile(
+                                  path.join(directory, edition),
+                                  JSON.stringify(object),
+                                  next) } }) }) },
+                      function(error) { next(error) }) } }) },
+              function(error) { next(error) }) } }) },
+      function(error) { fail(error) }) } })
+
+function get(url, callback) {
+  setTimeout(
+    function() {
+      https.get(url, function(response) {
+        var buffers = [ ]
+        response
+          .on('data', function(buffer) {
+            buffers.push(buffer) })
+          .on('error', function(error) {
+            callback(error) })
+          .on('end', function() {
+            console.log(response.statusCode)
+            var body = Buffer.concat(buffers).toString()
+            console.log(url)
+            console.log(body)
+            parse(body, function(error, parsed) {
+              if (error) { callback(error) }
+              else { callback(null, parsed) } }) }) }) },
+    1000) }
+
+function fail(error) {
+  console.error(error)
+  process.exit(1) }

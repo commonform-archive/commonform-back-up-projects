@@ -1,0 +1,14 @@
+{
+  "name": "commonform-back-up-projects",
+  "version": "0.0.0",
+  "description": "back up data from projects.commonform.org to disk",
+  "author": "Kyle E. Mitchell <kyle@kemitchell.com> (https://kemitchell.com/)",
+  "repository": "commonform/commonform-back-up-projects",
+  "license": "Apache-2.0",
+  "bin": "commonform-back-up-projects",
+  "dependencies": {
+    "async": "^1.5.2",
+    "json-parse-errback": "^2.0.0",
+    "mkdirp": "^0.5.1"
+  }
+}
